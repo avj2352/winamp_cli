@@ -1,0 +1,9 @@
+# ignore folders
+target/
+release/
+
+# ignore files
+*.lock
+.env
+!.env.example
+

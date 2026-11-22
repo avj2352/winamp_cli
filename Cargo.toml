@@ -1,0 +1,25 @@
+[package]
+name = "winamp_cli"
+version = "0.1.4"
+edition = "2024"
+description = "winamp cli to play local drive mp3 audio music"
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.0", features = ["derive", "color", "help", "cargo"] }
+colored = "3.1.1"
+console = "0.16.6"
+dotenvy = "0.15.7"
+indicatif = "0.18.6"
+reqwest = { version = "0.13.5", features = ["json"] }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.54.1", features = ["full"] }
+
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
