@@ -1,6 +1,6 @@
 # Audio listing and playback (0.2.0)
 
-`winamp ls` scans `MUSIC_FOLDER` and prints supported audio filenames, sorted by filename, one per line in cyan. The scan is nonrecursive and accepts MP3, WAV, FLAC, OGG and OGA extensions regardless of case. Directories and unrelated files are excluded. Extensions identify candidates; corrupt files or unsupported codecs produce a decode error when selected. Symlinks to regular audio files are accepted. Missing or unreadable folders return contextual errors; empty folders show a friendly message. Terminal control characters in names are escaped for safe display; original paths are retained for playback.
+`winamp ls` scans `MUSIC_FOLDER` and prints supported audio filenames, sorted by filename, one per line in cyan. Since 0.2.1, each filename has an indented bullet, with a blank line before and after the list. The scan is nonrecursive and accepts MP3, WAV, FLAC, OGG and OGA extensions regardless of case. Directories and unrelated files are excluded. Extensions identify candidates; corrupt files or unsupported codecs produce a decode error when selected. Symlinks to regular audio files are accepted. Missing or unreadable folders return contextual errors; empty folders show a friendly message. Terminal control characters in names are escaped for safe display; original paths are retained for playback.
 
 `winamp play` uses the same scan and opens a scrolling filename selector. Use arrow keys to select and Enter to play; Esc or q cancels selection. During playback:
 

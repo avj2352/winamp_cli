@@ -1,6 +1,6 @@
 # Winamp MP3 CLI - A CLI application, to play local drive MP3 music
 
-![Version 0.2.0](https://img.shields.io/badge/version-0.2.0-blue)
+![Version 0.2.1](https://img.shields.io/badge/version-0.2.1-blue)
 
 
 ✨ WINAMP MP3 CLI - A CLI MP3 Music Player✨

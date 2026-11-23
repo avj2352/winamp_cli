@@ -15,9 +15,11 @@ pub fn handle_list_music(_args: &ArgMatches) -> Result<()> {
             "No supported audio files found in MUSIC_FOLDER.".yellow()
         )?;
     } else {
+        writeln!(out)?;
         for path in files {
-            writeln!(out, "{}", display_name(&path).cyan())?;
+            writeln!(out, "  {} {}", "•".cyan(), display_name(&path).cyan())?;
         }
+        writeln!(out)?;
     }
     Ok(())
 }

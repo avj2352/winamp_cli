@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 (2026-11-22)
+
+- Add blank lines, indentation and cyan bullets to the audio file listing.
+
 ## 0.2.0 (2026-11-22)
 
 - Add colorful audio file listing and interactive playback with a live audio-driven waveform and pause/stop controls.
