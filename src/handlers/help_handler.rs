@@ -18,6 +18,8 @@ const HELP_TEXT: &str = r#"
     * winamp                                        - (default) winamp help - lists available commands
     * winamp help                                   - lists available commands
     * winamp --version                              - show the installed version
+    * winamp play                                   - play from a selection of audio files
+    * winamp ls                                     - list all audio files from the configured folder
 
 "#;
 

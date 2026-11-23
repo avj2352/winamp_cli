@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 (2026-11-22)
+
+- Add colorful audio file listing and interactive playback with a live audio-driven waveform and pause/stop controls.
+
+## 0.1.6 (2026-11-22)
+
+- Initialize a global `MUSIC_FOLDER` once at startup from configuration, propagating load errors.
+
+## 0.1.5 (2026-11-22)
+
+- Fixed command construction, runtime configuration initialization, and synchronous handler calls.
+- Replaced unfinished handler panics with errors and removed unused imports and dependencies.
+
 ## 0.1.4 (2026-11-22)
 
 - Colorized custom help output in cyan using the `colored` crate.
