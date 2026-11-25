@@ -47,7 +47,11 @@ pub fn handle_play_music(args: &ArgMatches) -> Result<()> {
 
     let file = File::open(&files[index]).context("Could not open selected audio file")?;
     let decoder = playback_source(file, looping)?;
-    let duration = decoder.total_duration();
+    let duration = if looping {
+        Decoder::try_from(File::open(&files[index])?)?.total_duration()
+    } else {
+        decoder.total_duration()
+    };
     let history = Arc::new(Mutex::new(VecDeque::with_capacity(80)));
     let source = WaveformSource::new(decoder, Arc::clone(&history));
     let mut stream = OutputStreamBuilder::open_default_stream()
@@ -66,11 +70,12 @@ pub fn handle_play_music(args: &ArgMatches) -> Result<()> {
     writeln!(
         io::stdout(),
         "{}",
-        "Space: pause/resume • q / Esc / Ctrl-C: stop".yellow()
+        "← / →: seek -10s / +10s • Space: pause/resume • q / Esc / Ctrl-C: stop".yellow()
     )?;
     let terminal = PlaybackTerminal::enter()?;
     sink.append(source);
     let mut stopped = false;
+    let mut seek_error = None;
     while !sink.empty() {
         let width = terminal::size()?.0.saturating_sub(1) as usize;
         let samples = history.lock().unwrap_or_else(|p| p.into_inner());
@@ -91,11 +96,14 @@ pub fn handle_play_music(args: &ArgMatches) -> Result<()> {
             .map(format_time)
             .unwrap_or_else(|| "--:--".to_owned());
         let elapsed = format_time(sink.get_pos());
-        let line = if looping {
+        let mut line = if looping {
             format!("Loop: ON • {status} {elapsed} elapsed  {bars}")
         } else {
             format!("{status} {elapsed} / {total}  {bars}")
         };
+        if let Some(error) = &seek_error {
+            line = format!("Seek failed: {error} • {line}");
+        }
         // A single bounded line avoids scrolling, including on small terminals.
         let line: String = line.chars().take(width).collect();
         let mut out = io::stdout().lock();
@@ -117,6 +125,10 @@ pub fn handle_play_music(args: &ArgMatches) -> Result<()> {
                 KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                     stopped = true;
                     break;
+                }
+                KeyCode::Left | KeyCode::Right => {
+                    let target = seek_target(sink.get_pos(), duration, looping, key.code);
+                    seek_error = sink.try_seek(target).err().map(|error| error.to_string());
                 }
                 KeyCode::Char(' ') => {
                     if sink.is_paused() {
@@ -162,6 +174,27 @@ fn playback_source(file: File, looping: bool) -> Result<Box<dyn Source<Item = f3
             Decoder::try_from(file).context("Could not decode selected audio file")?,
         ))
     }
+}
+
+fn seek_target(
+    position: Duration,
+    duration: Option<Duration>,
+    looping: bool,
+    key: KeyCode,
+) -> Duration {
+    let position = match duration {
+        Some(total) if looping && !total.is_zero() => {
+            Duration::from_nanos((position.as_nanos() % total.as_nanos()) as u64)
+        }
+        _ => position,
+    };
+    let step = Duration::from_secs(10);
+    let target = if key == KeyCode::Left {
+        position.saturating_sub(step)
+    } else {
+        position.saturating_add(step)
+    };
+    duration.map_or(target, |total| target.min(total))
 }
 
 fn format_time(time: Duration) -> String {
@@ -245,12 +278,75 @@ impl<S: Source> Source for WaveformSource<S> {
     fn total_duration(&self) -> Option<Duration> {
         self.inner.total_duration()
     }
+    fn try_seek(&mut self, pos: Duration) -> Result<(), rodio::source::SeekError> {
+        self.inner.try_seek(pos)?;
+        self.count = 0;
+        self.peak = 0.0;
+        self.history
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clear();
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use rodio::buffer::SamplesBuffer;
+
+    #[test]
+    fn seek_targets_respect_track_boundaries_and_loops() {
+        let total = Some(Duration::from_secs(60));
+        for (position, looping, key, expected) in [
+            (25, false, KeyCode::Left, 15),
+            (25, false, KeyCode::Right, 35),
+            (3, false, KeyCode::Left, 0),
+            (55, false, KeyCode::Right, 60),
+            (85, true, KeyCode::Left, 15),
+            (85, true, KeyCode::Right, 35),
+        ] {
+            assert_eq!(
+                seek_target(Duration::from_secs(position), total, looping, key),
+                Duration::from_secs(expected)
+            );
+        }
+        assert_eq!(
+            seek_target(Duration::ZERO, None, false, KeyCode::Left),
+            Duration::ZERO
+        );
+        assert_eq!(
+            seek_target(Duration::from_secs(25), None, false, KeyCode::Right),
+            Duration::from_secs(35)
+        );
+    }
+
+    #[test]
+    fn waveform_forwards_seeks_and_clears_old_peaks() {
+        let history = Arc::new(Mutex::new(VecDeque::new()));
+        let mut source = WaveformSource::new(
+            SamplesBuffer::new(
+                1,
+                100,
+                vec![0.5; 100]
+                    .into_iter()
+                    .chain(vec![0.25; 100])
+                    .collect::<Vec<_>>(),
+            ),
+            Arc::clone(&history),
+        );
+        for _ in 0..3 {
+            source.next();
+        }
+        assert!(!history.lock().unwrap().is_empty());
+        source.try_seek(Duration::from_secs(1)).unwrap();
+        assert!(history.lock().unwrap().is_empty());
+        assert_eq!(source.count, 0);
+        assert_eq!(source.peak, 0.0);
+        assert_eq!(source.next(), Some(0.25));
+        source.try_seek(Duration::ZERO).unwrap();
+        assert_eq!(source.next(), Some(0.5));
+    }
 
     #[test]
     fn loop_argument_controls_repetition() {

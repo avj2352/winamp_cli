@@ -1,6 +1,6 @@
 # Winamp MP3 CLI - A CLI application, to play local drive MP3 music
 
-![Version 1.0.2](https://img.shields.io/badge/version-1.0.2-blue)
+![Version 1.1.0](https://img.shields.io/badge/version-1.1.0-blue)
 
 
 ✨ WINAMP MP3 CLI - A CLI MP3 Music Player✨
@@ -24,7 +24,8 @@ MUSIC_FOLDER=/path/to/music cargo run -- play
 
 Supports MP3, WAV, FLAC, OGG and OGA files directly inside the music folder.
 Use arrow keys and Enter to choose a track. Playback shows a live waveform;
-Space pauses/resumes, and q, Esc or Ctrl-C stops.
+Left/Right seeks backward/forward 10 seconds, Space pauses/resumes, and q, Esc or Ctrl-C stops.
+See [seeking controls](docs/seeking-controls.md) for details.
 Use `play --loop` to repeat the selected track with a `Loop: ON` indicator.
 See [loop playback](docs/loop-playback.md) for details.
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 (2026-11-25)
+
+- Add Left/Right arrow controls to seek backward/forward 10 seconds, with boundary handling and waveform reset.
+- Document playback controls in command help and README; preserve pause/resume and stop controls.
+
 ## 1.0.2 (2026-11-24)
 
 - Add play command unit tests for default, bare flag, explicit boolean and invalid loop arguments.

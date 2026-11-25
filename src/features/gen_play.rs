@@ -2,7 +2,7 @@ use clap::{Arg, ArgAction, Command, value_parser};
 
 // gen play command
 pub fn gen_play_command() -> Command {
-    Command::new("play").about("play audio files").arg(
+    Command::new("play").about("play audio files").after_help("Playback controls: Left/Right: seek backward/forward 10 seconds; Space: pause/resume; q, Esc or Ctrl-C: stop.").arg(
         Arg::new("loop")
             .long("loop")
             .help("Repeat the selected track until stopped (true/false)")
