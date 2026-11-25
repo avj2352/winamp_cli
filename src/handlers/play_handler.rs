@@ -12,14 +12,15 @@ use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::{
     collections::VecDeque,
     fs::File,
-    io::{self, IsTerminal, Write},
+    io::{self, BufReader, IsTerminal, Write},
     sync::{Arc, Mutex},
     time::Duration,
 };
 
 use crate::util::audio_files::{display_name, music_files};
 
-pub fn handle_play_music(_args: &ArgMatches) -> Result<()> {
+pub fn handle_play_music(args: &ArgMatches) -> Result<()> {
+    let looping = args.get_one::<bool>("loop").copied().unwrap_or(false);
     let files = music_files()?;
     if files.is_empty() {
         writeln!(
@@ -45,7 +46,7 @@ pub fn handle_play_music(_args: &ArgMatches) -> Result<()> {
     };
 
     let file = File::open(&files[index]).context("Could not open selected audio file")?;
-    let decoder = Decoder::try_from(file).context("Could not decode selected audio file")?;
+    let decoder = playback_source(file, looping)?;
     let duration = decoder.total_duration();
     let history = Arc::new(Mutex::new(VecDeque::with_capacity(80)));
     let source = WaveformSource::new(decoder, Arc::clone(&history));
@@ -59,6 +60,9 @@ pub fn handle_play_music(_args: &ArgMatches) -> Result<()> {
         "♫ Now playing:".green().bold(),
         names[index].cyan()
     )?;
+    if looping {
+        writeln!(io::stdout(), "{}", "Loop: ON".green().bold())?;
+    }
     writeln!(
         io::stdout(),
         "{}",
@@ -86,7 +90,12 @@ pub fn handle_play_music(_args: &ArgMatches) -> Result<()> {
         let total = duration
             .map(format_time)
             .unwrap_or_else(|| "--:--".to_owned());
-        let line = format!("{status} {} / {total}  {bars}", format_time(sink.get_pos()));
+        let elapsed = format_time(sink.get_pos());
+        let line = if looping {
+            format!("Loop: ON • {status} {elapsed} elapsed  {bars}")
+        } else {
+            format!("{status} {elapsed} / {total}  {bars}")
+        };
         // A single bounded line avoids scrolling, including on small terminals.
         let line: String = line.chars().take(width).collect();
         let mut out = io::stdout().lock();
@@ -133,6 +142,26 @@ pub fn handle_play_music(_args: &ArgMatches) -> Result<()> {
         .green()
     )?;
     Ok(())
+}
+
+fn playback_source(file: File, looping: bool) -> Result<Box<dyn Source<Item = f32> + Send>> {
+    if looping {
+        let len = file
+            .metadata()
+            .context("Could not read selected audio file metadata")?
+            .len();
+        let decoder = Decoder::builder()
+            .with_data(BufReader::new(file))
+            .with_byte_len(len)
+            .with_seekable(true)
+            .build_looped()
+            .context("Could not decode selected audio file")?;
+        Ok(Box::new(decoder))
+    } else {
+        Ok(Box::new(
+            Decoder::try_from(file).context("Could not decode selected audio file")?,
+        ))
+    }
 }
 
 fn format_time(time: Duration) -> String {
@@ -222,6 +251,45 @@ impl<S: Source> Source for WaveformSource<S> {
 mod tests {
     use super::*;
     use rodio::buffer::SamplesBuffer;
+
+    #[test]
+    fn loop_argument_controls_repetition() {
+        // A short mono PCM WAV lets us verify decoding across EOF without an audio device.
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(b"RIFF").unwrap();
+        file.write_all(&44_u32.to_le_bytes()).unwrap();
+        file.write_all(b"WAVEfmt ").unwrap();
+        file.write_all(&16_u32.to_le_bytes()).unwrap();
+        file.write_all(&1_u16.to_le_bytes()).unwrap();
+        file.write_all(&1_u16.to_le_bytes()).unwrap();
+        file.write_all(&8000_u32.to_le_bytes()).unwrap();
+        file.write_all(&16000_u32.to_le_bytes()).unwrap();
+        file.write_all(&2_u16.to_le_bytes()).unwrap();
+        file.write_all(&16_u16.to_le_bytes()).unwrap();
+        file.write_all(b"data").unwrap();
+        file.write_all(&8_u32.to_le_bytes()).unwrap();
+        for sample in [0_i16, 8192, -16384, 24576] {
+            file.write_all(&sample.to_le_bytes()).unwrap();
+        }
+        for (args, looping) in [
+            (vec!["play"], false),
+            (vec!["play", "--loop"], true),
+            (vec!["play", "--loop", "true"], true),
+            (vec!["play", "--loop", "false"], false),
+        ] {
+            use std::io::{Seek, SeekFrom};
+            file.seek(SeekFrom::Start(0)).unwrap();
+            let matches = crate::features::gen_play::gen_play_command()
+                .try_get_matches_from(args)
+                .unwrap();
+            let enabled = *matches.get_one::<bool>("loop").unwrap();
+            assert_eq!(enabled, looping);
+            let source = playback_source(file.try_clone().unwrap(), enabled).unwrap();
+            let samples: Vec<_> = source.take(12).collect();
+            let expected = [0.0, 0.25, -0.5, 0.75].repeat(if looping { 3 } else { 1 });
+            assert_eq!(samples, expected);
+        }
+    }
 
     #[test]
     fn waveform_tracks_audio_and_preserves_samples() {

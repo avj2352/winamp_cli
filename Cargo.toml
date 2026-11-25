@@ -1,6 +1,6 @@
 [package]
 name = "winamp_cli"
-version = "0.2.1"
+version = "1.0.2"
 edition = "2024"
 description = "winamp cli to play local drive mp3 audio music"
 

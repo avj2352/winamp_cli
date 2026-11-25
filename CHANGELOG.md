@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2 (2026-11-24)
+
+- Add play command unit tests for default, bare flag, explicit boolean and invalid loop arguments.
+
+## 1.0.1 (2026-11-24)
+
+- Update the application and package version to 1.0.1 and synchronize the README version badge.
+
+## 0.3.0 (2026-11-24)
+
+- Repeat the selected audio file with `play --loop` and display `Loop: ON` during playback.
+
 ## 0.2.1 (2026-11-22)
 
 - Add blank lines, indentation and cyan bullets to the audio file listing.

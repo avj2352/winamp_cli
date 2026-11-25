@@ -19,6 +19,7 @@ const HELP_TEXT: &str = r#"
     * winamp help                                   - lists available commands
     * winamp --version                              - show the installed version
     * winamp play                                   - play from a selection of audio files
+    * winamp play --loop                            - play the selected audio file in a loop
     * winamp ls                                     - list all audio files from the configured folder
 
 "#;
