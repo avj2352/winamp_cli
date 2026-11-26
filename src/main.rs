@@ -14,7 +14,7 @@ use crate::handlers::play_handler::handle_play_music;
 // ..util
 use crate::util::env_config::get_music_folder;
 
-pub const VERSION: &str = "1.1.0";
+pub const VERSION: &str = "1.1.1";
 pub const APP_DESCRIPTION: &str = "WINAMP MP3 CLI - A CLI MP3 Music Player";
 pub static MUSIC_FOLDER: OnceLock<String> = OnceLock::new();
 

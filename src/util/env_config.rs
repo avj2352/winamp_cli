@@ -9,5 +9,6 @@ pub fn get_music_folder() -> Result<String> {
         Err(error) => return Err(error).context("Could not load .env"),
     }
 
-    Ok(env::var("MUSIC_FOLDER").unwrap_or_else(|_| "/home/pramod/Music".to_owned()))
+    Ok(env::var("MUSIC_FOLDER")
+        .unwrap_or_else(|_| "/Users/pramodajingade/Music/youtube-songs".to_owned()))
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2026-11-25)
+
+- Show the configured MUSIC_FOLDER path in bold yellow above the song listing, including for empty folders, and update list command help.
+
 ## 1.1.0 (2026-11-25)
 
 - Add Left/Right arrow controls to seek backward/forward 10 seconds, with boundary handling and waveform reset.
